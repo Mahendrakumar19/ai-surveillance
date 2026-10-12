@@ -7,19 +7,19 @@
   <br />
   <br />
 
-  <h1>🛡️ <strong>AI SURVEILLANCE & REAL-TIME INTELLIGENCE PLATFORM</strong></h1>
+  <h1>🛡️ <strong>MULTI CAMERA AI SURVEILLANCE & REAL TIME ANALYTICS PLATFORM</strong></h1>
 
   <p>
-    <strong>Enterprise Real-Time Video Analytics • YOLOv8 Multi-Object Detection • ByteTrack Tracking • ANPR Plate Scanner • Groq Vision AI • Human Review Queue • Biometric Face Attendance</strong>
+    <strong>Enterprise Real-Time Video Analytics • YOLOv9 / YOLOv8 Multi-Object Detection • ByteTrack Multi-Object Tracking • ANPR Plate Scanner • Groq Vision AI • Human Review Queue • Biometric Face Attendance • Full Light & Dark Theme</strong>
   </p>
 
   <p>
-    <a href="https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repo" /></a>
+    <a href="https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repo" /></a>
     <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" /></a>
     <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite_8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" /></a>
     <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
-    <a href="https://ultralytics.com/"><img src="https://img.shields.io/badge/YOLOv8-Ultralytics-00599C?style=for-the-badge&logo=yolo&logoColor=white" alt="YOLOv8" /></a>
+    <a href="https://github.com/WongKinYiu/yolov9"><img src="https://img.shields.io/badge/YOLOv9--C-Official_PyTorch-00599C?style=for-the-badge&logo=pytorch&logoColor=white" alt="YOLOv9" /></a>
     <a href="https://groq.com/"><img src="https://img.shields.io/badge/Groq_Vision_AI-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq Vision AI" /></a>
     <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase_/_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase / PostgreSQL" /></a>
   </p>
@@ -40,7 +40,7 @@
     <a href="#-ui-design--components">UI & Theme System</a> •
     <a href="#-feature-comparison-matrix">Feature Matrix</a> •
     <a href="#-api-reference">API Reference</a> •
-    <a href="#-quick-start">Quick Start</a> •
+    <a href="#-step-by-step-installation--setup-guide-pc--laptop">Installation Guide</a> •
     <a href="#-deployment-guide">Deployment</a>
   </p>
 
@@ -212,74 +212,183 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start
+## 💻 Step-by-Step Installation & Setup Guide (PC / Laptop)
 
-### Prerequisites
-- **Python**: `3.12+` installed
-- **Node.js**: `18+` & `npm` installed
-- **Git**: Installed and configured
+Follow these clear, step-by-step instructions to set up, install dependencies, and run the **Multi Camera AI Surveillance & Real Time Analytics Platform** on any Windows PC, Linux machine, or macOS.
 
 ---
 
-### Step 1: Clone Repository
+### 1️⃣ System Prerequisites
+
+Before starting, ensure the following software is installed on your computer:
+
+| Software | Required Version | Download Link | Verification Command |
+|:---|:---|:---|:---|
+| **Python** | `3.10` to `3.12+` | [python.org/downloads](https://www.python.org/downloads/) | `python --version` |
+| **Node.js** & **npm** | `Node 18+` / `npm 9+` | [nodejs.org](https://nodejs.org/) | `node -v` and `npm -v` |
+| **Git** | Any modern version | [git-scm.com](https://git-scm.com/) | `git --version` |
+| **Webcam / Camera** | Built-in or USB | Laptop Webcam or USB Cam | Device Manager / Camera App |
+
+> [!IMPORTANT]
+> **Windows Users**: When installing Python, make sure to check the box: **"Add python.exe to PATH"**!
+
+---
+
+### 2️⃣ Step 1: Clone the Repository
+
+Open your terminal (**PowerShell**, **Command Prompt**, or **Bash**) and clone the project:
+
 ```bash
+# Clone the repository
 git clone https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git
+
+# Navigate into the project directory
 cd AI_SURVILENCE-SYSTEM
 ```
 
 ---
 
-### Step 2: Backend Setup
+### 3️⃣ Step 2: Backend Setup & Installation
+
+The backend is built with FastAPI, PyTorch, OpenCV, and WebSockets.
+
+#### 1. Open Terminal 1 for Backend:
 ```bash
+# Navigate to the backend directory
 cd backend
+```
 
-# Create & activate virtual environment
-# Windows (PowerShell):
-python -m venv ../venv
-..\venv\Scripts\Activate.ps1
+#### 2. Create and Activate Python Virtual Environment:
 
-# Linux / macOS:
-# python -m venv ../venv && source ../venv/bin/activate
+- **Windows (PowerShell)**:
+  ```powershell
+  # If PowerShell shows script execution policy error, run this once:
+  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
-# Install dependencies
+  # Create virtual environment
+  python -m venv venv
+
+  # Activate virtual environment
+  .\venv\Scripts\Activate.ps1
+  ```
+
+- **Windows (Command Prompt / CMD)**:
+  ```cmd
+  python -m venv venv
+  venv\Scripts\activate.bat
+  ```
+
+- **Linux / macOS**:
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+*(Once activated, your terminal prompt will show `(venv)` at the beginning).*
+
+#### 3. Install Python Dependencies:
+```bash
+# Upgrade pip to latest version
+python -m pip install --upgrade pip
+
+# Install all backend requirements
 pip install -r requirements.txt
+```
 
-# Run migrations (Optional / if using Supabase or PostgreSQL)
-alembic upgrade head
+#### 4. Verify AI Model Weights:
+The system automatically includes the official YOLO checkpoints:
+- **YOLOv9-C Checkpoint**: Located at `backend/app/models/yolov9-c-converted.pt`
+- **YOLO-World & YOLO11 Checkpoints**: Auto-cached in weights cache.
 
-# Start FastAPI server
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+#### 5. Start the FastAPI Backend Server:
+```bash
+# Start server with auto-reload enabled
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+✅ **Backend is running!** You should see:
+```text
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Application startup complete.
 ```
 
 ---
 
-### Step 3: Frontend Setup
+### 4️⃣ Step 3: Frontend Setup & Installation
+
+The frontend is a modern React 19 + TypeScript + Vite web application.
+
+#### 1. Open a New / Separate Terminal (Terminal 2):
 ```bash
-# Open a separate terminal window
+# Navigate to the frontend directory
 cd frontend
+```
 
-# Install dependencies
+#### 2. Install Node.js Dependencies:
+```bash
 npm install
+```
 
-# Start Vite dev server
+#### 3. Start the Frontend Development Server:
+```bash
 npm run dev
 ```
 
+✅ **Frontend is running!** You will see:
+```text
+  VITE v8.3.0  ready in 450 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+```
+
 ---
 
-### Step 4: Access System
-- 🌐 **Web Dashboard**: `http://localhost:5173`
-- 📚 **Swagger Docs**: `http://127.0.0.1:8000/docs`
-- 📖 **ReDoc Docs**: `http://127.0.0.1:8000/redoc`
+### 5️⃣ Step 4: Open & Use the System in Your Browser
+
+Open Google Chrome, Microsoft Edge, or Firefox and go to:
+👉 **[http://localhost:5173](http://localhost:5173)**
+
+#### 🔑 Default Login Credentials:
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
+*(Or click direct demo sign-in)*
 
 ---
+
+### 🎯 Key Pages & How to Test on Your PC:
+
+| Page | URL | How to Test |
+|:---|:---|:---|
+| **Object Detection** | `http://localhost:5173/objects` | 1. Click **"Start Live Camera"** on the left.<br />2. Allow camera permission in browser.<br />3. Point your laptop camera at any object (*laptop, mobile phone, bottle, cup, chair, person*).<br />4. View live bounding boxes on the **left**, and real-time detected names & history table on the **right**! |
+| **Vehicle & ANPR** | `http://localhost:5173/vehicles` | Test continuous ANPR number plate detection via live webcam or simulated gate CCTV. |
+| **Light & Dark Mode** | Any Page | Click the **Sun (☀️) / Moon (🌙)** icon in the top header to toggle between sleek Dark Mode and crisp Light Mode (including side menu). |
+| **Swagger API Docs** | `http://127.0.0.1:8000/docs` | Interactive API documentation for all REST endpoints and WebSockets. |
+
+---
+
+### 🛠️ Common Troubleshooting Tips for PC:
+
+- **Error: "File Activate.ps1 cannot be loaded because running scripts is disabled"**:
+  Run PowerShell as Administrator or run:
+  ```powershell
+  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+  ```
+- **Port 8000 or 5173 Already in Use**:
+  Check running processes and kill stale processes:
+  ```powershell
+  # Windows PowerShell:
+  Get-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess | Stop-Process -Force
+  ```
+- **Webcam Access Blocked**:
+  In Chrome/Edge URL bar, click the camera icon next to `http://localhost:5173` and set Camera permissions to **"Allow"**.
 
 ## 🚀 Deployment Guide
 
 ### 🟣 Deploy Backend to Render
 
 1. Log in to [Render.com](https://render.com) and click **New +** → **Web Service**.
-2. Connect your GitHub repository: `https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git`.
+2. Connect your GitHub repository: `https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git`.
 3. Configure settings:
    - **Root Directory**: `backend`
    - **Environment**: `Python 3`
@@ -299,7 +408,7 @@ npm run dev
 ### ▲ Deploy Frontend to Vercel
 
 1. Log in to [Vercel.com](https://vercel.com) and click **Add New...** → **Project**.
-2. Import your GitHub repository: `AI_SURVILENCE-SYSTEM`.
+2. Import your GitHub repository: `SURVILENCE-SYSTEM-NEW_CODE`.
 3. Configure project settings:
    - **Root Directory**: `frontend`
    - **Framework Preset**: `Vite`
@@ -316,7 +425,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```text
-AI_SURVILENCE-SYSTEM/
+SURVILENCE-SYSTEM-NEW_CODE/
 ├── backend/
 │   ├── alembic/                         # Database schema migrations
 │   ├── app/
