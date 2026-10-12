@@ -114,11 +114,15 @@ flowchart TD
 - **Debounced Alarms**: Configurable per-track cooldown timers prevent duplicate notifications.
 - **Annotated Evidence**: Saves timestamped, bounding-boxed frames to `/evidence/snapshots/`.
 
-### 2. 🚗 ANPR Vehicle License Plate Scanner (`/vehicles`)
-- **Dual Mode**: Process live camera feeds or upload high-resolution vehicle imagery.
-- **Smart Plate Formatting**: Custom regex filters tailored for vehicle registration plates (e.g. `JH03MF4477`, `UP16BT4321`).
+### 2. 🚗 Tri-Engine Indian ANPR License Plate Scanner (`/vehicles`)
+- **Tri-Engine Modular Architecture**: Select in real-time between three specialized recognition engines:
+  - ⚡ **FastALPR (ONNX Runtime)**: Ultra high-speed (~100 ms) YOLOv9-T detector + CCT Transformer OCR optimized for real-time video streaming without latency.
+  - 🇮🇳 **Indian ANPR Engine**: Dedicated YOLO plate detector (`references/indian-anpr/best.pt`) with multi-pass deskew OCR, two-line motorcycle & HSRP analysis, and Indian RTO state validation.
+  - 🛡️ **YOLO + EasyOCR (Backup Engine)**: Original baseline pipeline using multi-class vehicle detection (`backend/best.pt`) with EasyOCR.
+- **Side-by-Side Accuracy Benchmark**: Integrated benchmarking suite running on identical labelled Indian vehicle plates across 12 Indian states (cars & motorcycles). View full-plate exact accuracy and latency metrics directly in the UI.
+- **Duplicate Prevention & Best Snapshot**: Automatically prevents database spam within a 20-second session window while automatically upgrading saved records if a higher-confidence frame is captured.
 - **Voice Announcements**: Built-in speech synthesis toggle (`🔊 Voice Announcement ON / OFF`) announcing detected license plates.
-- **Historical Records**: Searchable database records with filters, status badges, and CSV export.
+- **Historical Records & Evidence**: Full SQLite & MongoDB sync with location-sorted evidence image archives and CSV export.
 
 ### 3. ⚡ Groq Multimodal Vision Engine (`/events/vision-scan`)
 - **High-Speed Multimodal Intelligence**: Secondary verification powered by Groq's `qwen/qwen3.6-27b` multimodal model.
@@ -295,10 +299,11 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### 4. Verify AI Model Weights:
-The system automatically includes the official YOLO checkpoints:
-- **YOLOv9-C Checkpoint**: Located at `backend/app/models/yolov9-c-converted.pt`
-- **YOLO-World & YOLO11 Checkpoints**: Auto-cached in weights cache.
+#### 4. Seed Database (Admin & Initial Config):
+```bash
+# Seed SQLite database with default admin credentials
+python seed_sqlite.py
+```
 
 #### 5. Start the FastAPI Backend Server:
 ```bash
@@ -388,7 +393,7 @@ Open Google Chrome, Microsoft Edge, or Firefox and go to:
 ### 🟣 Deploy Backend to Render
 
 1. Log in to [Render.com](https://render.com) and click **New +** → **Web Service**.
-2. Connect your GitHub repository: `https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git`.
+2. Connect your GitHub repository: `https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git`.
 3. Configure settings:
    - **Root Directory**: `backend`
    - **Environment**: `Python 3`
@@ -408,7 +413,7 @@ Open Google Chrome, Microsoft Edge, or Firefox and go to:
 ### ▲ Deploy Frontend to Vercel
 
 1. Log in to [Vercel.com](https://vercel.com) and click **Add New...** → **Project**.
-2. Import your GitHub repository: `SURVILENCE-SYSTEM-NEW_CODE`.
+2. Import your GitHub repository: `AI_SURVILENCE-SYSTEM`.
 3. Configure project settings:
    - **Root Directory**: `frontend`
    - **Framework Preset**: `Vite`

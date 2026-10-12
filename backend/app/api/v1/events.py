@@ -182,8 +182,6 @@ class VisionScanRequest(BaseModel):
     image_base64: str
     camera_name: Optional[str] = "Live AI Vision Scanner"
     groq_api_key: Optional[str] = None
-    roboflow_api_key: Optional[str] = None
-    roboflow_model_id: Optional[str] = None
 
 
 @router.post("/vision-scan")
@@ -192,51 +190,17 @@ async def vision_scan_object(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    High-precision AI Vision / Multimodal Object Scanner.
-    Inspects image frame using Groq Qwen/qwen3.8-27b Multimodal Vision model or Roboflow
+    High-precision Groq AI Vision / Multimodal Object Scanner.
+    Inspects image frame using Groq Qwen/qwen3.6-27b Multimodal Vision model
     and identifies exact objects (Computer Mouse, Pen, Phone, Laptop, Bottle, Glasses, etc.)
     with 99%+ precision, bypassing background clutter (chairs, TVs, walls).
     """
     import os
     import re
-    import base64
     import httpx
     import json
     from app.core.config import settings
     
-    # Check Roboflow first if model_id is specified
-    rf_key = req.roboflow_api_key or os.environ.get("ROBOFLOW_API_KEY", "") or getattr(settings, "ROBOFLOW_API_KEY", "")
-    rf_model = req.roboflow_model_id or os.environ.get("ROBOFLOW_MODEL_ID", "") or getattr(settings, "ROBOFLOW_MODEL_ID", "")
-    
-    if rf_model and rf_key:
-        try:
-            clean_b64 = req.image_base64
-            if "," in clean_b64:
-                clean_b64 = clean_b64.split(",", 1)[1]
-            img_bytes = base64.b64decode(clean_b64)
-            
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                rf_resp = await client.post(
-                    f"https://detect.roboflow.com/{rf_model}?api_key={rf_key}",
-                    content=img_bytes,
-                    headers={"Content-Type": "application/x-www-form-urlencoded"}
-                )
-                if rf_resp.status_code == 200:
-                    rf_data = rf_resp.json()
-                    preds = rf_data.get("predictions", [])
-                    if preds:
-                        top_pred = max(preds, key=lambda x: x.get("confidence", 0))
-                        pred_class = top_pred.get("class", "").title()
-                        pred_conf = top_pred.get("confidence", 0.95)
-                        return {
-                            "success": True,
-                            "object_name": pred_class,
-                            "confidence": pred_conf,
-                            "source": "roboflow"
-                        }
-        except Exception as rf_err:
-            pass  # Fallback to multimodal vision
-
     api_key = req.groq_api_key or os.environ.get("GROQ_API_KEY", "") or settings.GROQ_API_KEY
     
     if not api_key:
@@ -250,7 +214,7 @@ async def vision_scan_object(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={
-                    "model": "qwen/qwen3.8-27b",
+                    "model": "qwen/qwen3.6-27b",
                     "messages": [
                         {
                             "role": "system",
@@ -307,7 +271,7 @@ async def vision_scan_object(
     return {
         "success": True,
         "object_name": object_name,
-        "confidence": 0.98 if object_name else None,
+        "confidence": None,
         "source": "groq_vision_llm"
     }
 

@@ -837,10 +837,12 @@ class VehicleService:
         vehicle_type: Optional[str] = None,
         camera_name: str = "Live ANPR Camera",
         location_spot: str = "Apartment Main Gate",
-        is_live_stream: bool = False
+        is_live_stream: bool = False,
+        engine: Optional[str] = "indian_anpr"
     ) -> Tuple[bool, Optional[VehicleRecord], str, Dict[str, Any]]:
         """
-        Processes AI license plate scanning (YOLO best.pt + EasyOCR) and saves to database.
+        Processes AI license plate scanning (using selected engine: indian_anpr, fast_alpr, or yolo_easyocr)
+        and saves to database.
         Returns: (success: bool, record: Optional[VehicleRecord], message: str, detection_details: Dict)
         """
         number_plate = ""
@@ -850,7 +852,9 @@ class VehicleService:
             "bounding_box": None,
             "cropped_plate_base64": None,
             "is_valid_format": False,
-            "raw_ocr_text": None
+            "raw_ocr_text": None,
+            "engine": engine or "indian_anpr",
+            "processing_time_ms": 0.0
         }
 
         # Case 1: Direct / Manual Plate Input
@@ -860,7 +864,7 @@ class VehicleService:
             confidence = 0.99
             detection_details["is_valid_format"] = is_valid
         
-        # Case 2: Base64 Image Processing with YOLO + OCR
+        # Case 2: Base64 Image Processing with Selected ANPR Engine
         elif image_base64:
             try:
                 clean_b64 = image_base64
@@ -874,16 +878,23 @@ class VehicleService:
                 if img_bgr is None:
                     return False, None, "Invalid image format received.", detection_details
 
-                det = cls._detect_and_read_plate(img_bgr, is_live_stream=is_live_stream)
-                if det["plate"]:
-                    number_plate = det["plate"]
-                    confidence = det["confidence"]
-                    detected_type = det.get("vehicle_type") or (vehicle_type.lower() if vehicle_type else "car")
+                from app.services.anpr.engine_manager import anpr_manager
+
+                selected_engine = anpr_manager.get_engine(engine)
+                det = selected_engine.detect_and_read(img_bgr, is_live_stream=is_live_stream)
+
+                detection_details["engine"] = det.engine
+                detection_details["processing_time_ms"] = det.processing_time_ms
+
+                if det.plate:
+                    number_plate = det.plate
+                    confidence = det.confidence
+                    detected_type = det.vehicle_type or (vehicle_type.lower() if vehicle_type else "car")
                     detection_details["vehicle_type"] = detected_type
-                    detection_details["bounding_box"] = det["bounding_box"]
-                    detection_details["cropped_plate_base64"] = det["cropped_plate_base64"]
-                    detection_details["is_valid_format"] = det["is_valid_format"]
-                    detection_details["raw_ocr_text"] = det["raw_ocr_text"]
+                    detection_details["bounding_box"] = det.bounding_box
+                    detection_details["cropped_plate_base64"] = det.cropped_plate_base64
+                    detection_details["is_valid_format"] = det.is_valid_format
+                    detection_details["raw_ocr_text"] = det.raw_plate
                 else:
                     return False, None, "No license plate detected in camera frame. Please show plate clearly.", detection_details
 
@@ -993,8 +1004,11 @@ class VehicleService:
 
         if existing_record:
             now_utc = datetime.now(timezone.utc)
+            rec_ts = existing_record.timestamp
+            if rec_ts is not None and rec_ts.tzinfo is None:
+                rec_ts = rec_ts.replace(tzinfo=timezone.utc)
             # Calculate time difference in seconds since last detection
-            time_diff = (now_utc - existing_record.timestamp).total_seconds()
+            time_diff = (now_utc - rec_ts).total_seconds() if rec_ts else 999.0
             # Agar wahi gadi pichle 20 seconds ke andar hi camera ke samne chal rahi hai (Same Session)
             if time_diff <= 20:
                 # BEST SNAPSHOT CHECK:
@@ -1056,8 +1070,9 @@ class VehicleService:
         await db.commit()
         await db.refresh(record)
 
-        # Sync to MongoDB Atlas Cloud
+        # Sync to MongoDB Atlas Cloud (Non-blocking background sync with timeout)
         try:
+            import asyncio
             from app.db.mongodb import get_async_db
             mongo_db = get_async_db()
             mongo_doc = {
@@ -1071,7 +1086,10 @@ class VehicleService:
                 "timestamp": record.timestamp,
                 "created_at": record.created_at,
             }
-            await mongo_db.vehicles.replace_one({"_id": str(record.id)}, mongo_doc, upsert=True)
+            await asyncio.wait_for(
+                mongo_db.vehicles.replace_one({"_id": str(record.id)}, mongo_doc, upsert=True),
+                timeout=1.5
+            )
             logger.info(f"[ANPR] Vehicle '{number_plate}' synced to MongoDB Atlas 'vehicles'")
         except Exception as me:
             logger.debug(f"[ANPR] MongoDB sync skipped: {me}")

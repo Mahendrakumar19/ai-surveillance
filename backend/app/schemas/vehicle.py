@@ -49,6 +49,7 @@ class ANPRScanRequest(BaseModel):
     camera_name: Optional[str] = Field(default="Live ANPR Camera", description="Camera source name")
     location_spot: Optional[str] = Field(default="Apartment Main Gate", description="Location spot (e.g., Visitor Parking, Apartment Gate)")
     is_live_stream: Optional[bool] = Field(default=False, description="Whether request is from continuous live camera loop")
+    engine: Optional[str] = Field(default="indian_anpr", description="ANPR recognition engine ('indian_anpr', 'fast_alpr', or 'yolo_easyocr')")
 
 
 class ANPRScanResponse(BaseModel):
@@ -65,6 +66,8 @@ class ANPRScanResponse(BaseModel):
     security_status: Optional[dict] = Field(default=None, description="Enterprise access control & security classification")
     consensus_frames: Optional[int] = Field(default=None, description="Number of temporal frames used for consensus voting")
     consensus_plate: Optional[str] = Field(default=None, description="Consensus plate resolved across multiple frames")
+    engine: Optional[str] = Field(default=None, description="Engine utilized for recognition")
+    processing_time_ms: Optional[float] = Field(default=None, description="Recognition latency in milliseconds")
     message: str
     record: Optional[VehicleOut] = None
 
@@ -73,3 +76,18 @@ class WatchlistEntry(BaseModel):
     number_plate: str = Field(..., description="Standard registration plate number")
     category: str = Field(default="RESIDENT", description="Category: RESIDENT, VIP, BLACKLIST, VISITOR")
     notes: Optional[str] = Field(default=None, description="Optional notes or owner info")
+
+
+class ANPREngineInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    is_default: bool
+
+
+class ANPRBenchmarkResponse(BaseModel):
+    timestamp: str
+    total_images: int
+    engine_summaries: dict
+    detailed_results: list
+

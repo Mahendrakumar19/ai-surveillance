@@ -19,8 +19,8 @@ password = 'admin123'
 salt = bcrypt.gensalt()
 hashed = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
-tenant_id = 'bb398bec-8429-44db-b9ec-b04c3ac81c36'
-user_id = str(uuid.uuid4())
+tenant_id = uuid.UUID('bb398bec-8429-44db-b9ec-b04c3ac81c36').hex
+user_id = uuid.uuid4().hex
 now = datetime.utcnow().isoformat()
 
 # Check if tenant exists
@@ -39,7 +39,7 @@ conn.execute(
 )
 
 print("Creating membership...")
-membership_id = str(uuid.uuid4())
+membership_id = uuid.uuid4().hex
 conn.execute(
     "INSERT INTO memberships (id, user_id, tenant_id, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
     (membership_id, user_id, tenant_id, 'platform_admin', now, now)

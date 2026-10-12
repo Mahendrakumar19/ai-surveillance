@@ -115,7 +115,9 @@ class Settings(BaseSettings):
         # If in cloud deployment (Render) without DATABASE_URL, default to the Supabase pooler
         if os.environ.get("RENDER") or os.environ.get("PORT"):
             return "postgresql+asyncpg://postgres.ofknpvaxynvokuzfkwds:suHH6zklTgKZoqS8@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres"
-        return "sqlite+aiosqlite:///./ai_surveillance.db"
+        from pathlib import Path
+        db_file = (Path(__file__).resolve().parents[2] / "ai_surveillance.db").as_posix()
+        return f"sqlite+aiosqlite:///{db_file}"
 
     @property
     def DATABASE_URL_SYNC(self) -> str:
@@ -136,7 +138,9 @@ class Settings(BaseSettings):
             return url
         if os.environ.get("RENDER") or os.environ.get("PORT"):
             return "postgresql+psycopg://postgres.ofknpvaxynvokuzfkwds:suHH6zklTgKZoqS8@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
-        return "sqlite:///./ai_surveillance.db"
+        from pathlib import Path
+        db_file = (Path(__file__).resolve().parents[2] / "ai_surveillance.db").as_posix()
+        return f"sqlite:///{db_file}"
 
 
 # Singleton settings instance

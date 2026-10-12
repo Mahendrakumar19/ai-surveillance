@@ -80,7 +80,7 @@ async def get_current_user(
         raise credentials_exception
 
     try:
-        user_uuid = uuid.UUID(token_data.sub)
+        user_uuid = uuid.UUID(str(token_data.sub).strip())
         from sqlalchemy import select
         from sqlalchemy.orm import selectinload
         stmt = (

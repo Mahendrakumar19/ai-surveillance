@@ -1,0 +1,78 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.venv-1/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.sublime-project
+*.sublime-workspace
+
+# ML Models & Data
+# best.pt is intentionally tracked (18 MB, needed for Streamlit Cloud)
+best_old.pt
+yolo11n.pt
+*.pth
+*.onnx
+*.h5
+*.pb
+runs/
+datasets/
+sample_images/
+test_images/
+output_videos/
+evaluation/*.csv
+evaluation/*.json
+evaluation/*.txt
+failure_samples/*.jpg
+failure_samples/*.jpeg
+failure_samples/*.png
+failure_samples/*.bmp
+failure_samples/*.webp
+failure_samples/labels.csv
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+!ANPR_YOLO_Training_Colab_Run.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Temporary
+*.tmp
+*.temp
+.env.local
+local_config.py

@@ -42,22 +42,31 @@ frontend/node_modules/
 frontend/dist/
 frontend/.cache/
 
-# Temporary Evidence Snapshots
+# Nested duplicate extraction directory
+SURVILENCE-SYSTEM-NEW_CODE-main/
+
+# Temporary Evidence Snapshots & Storage
 backend/evidence/snapshots/*.jpg
 backend/evidence/snapshots/*.png
+backend/storage/evidence/*
 !backend/evidence/snapshots/.gitkeep
 
 # Alembic
 alembic/versions/*.pyc
 
-# Model Weights (large binaries >50MB)
+# Model Weights (Ignore large files >100MB)
 weights/
 backend/weights/
-models/*.pt
-!models/best.pt
-backend/*.pt
+backend/weights/clip/
+
+# Keep needed YOLO & ANPR model weights under 50MB
+*.pt
 !backend/best.pt
 !backend/yolov8n.pt
-*.pt
+!backend/yolov8s-worldv2.pt
+!backend/app/models/yolo11m.pt
+!backend/app/models/yolov9-c-converted.pt
 !models/best.pt
+!references/indian-anpr/best.pt
+
 runs/

@@ -1,0 +1,32 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Indian ANPR System - Dependencies
+# Python 3.10+, tested on macOS, Linux, Windows
+
+# Core ML & Detection (CPU wheels via extra-index-url above)
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+
+# OCR Engines
+easyocr>=1.7.0
+pytesseract>=0.3.13
+
+# Computer Vision & Numeric
+opencv-python-headless>=4.8.0
+numpy>=1.24.0,<2.0.0
+
+# Web App & UI
+streamlit>=1.30.0
+Pillow>=10.0.0
+pandas>=2.0.0
+plotly>=5.18.0
+
+# REST API
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9
+pydantic>=2.0.0
+
+# Optional (for enhanced performance)
+# pyarrow>=10.0.0  # For faster CSV export

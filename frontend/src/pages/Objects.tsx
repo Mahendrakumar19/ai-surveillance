@@ -763,11 +763,15 @@ export default function Objects() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn('video play:', e));
+        setIsScanning(true);
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setIsScanning(true);
+          videoRef.current?.play().catch(() => {});
           detectLoop();
         };
+        setTimeout(() => {
+          detectLoop();
+        }, 300);
       }
     } catch (err: any) {
       console.error('Error starting scanner:', err);
@@ -1528,12 +1532,13 @@ export default function Objects() {
 
             {/* Mode A: Live Webcam Scanner */}
             {scanMode === 'camera' && (
-              <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+              <div className="bg-black relative flex items-center justify-center overflow-hidden min-h-[340px] aspect-video w-full">
                 <video
                   ref={videoRef}
                   className="absolute inset-0 w-full h-full object-cover"
                   playsInline
                   muted
+                  autoPlay
                 />
                 <canvas
                   ref={canvasRef}
@@ -1612,7 +1617,7 @@ export default function Objects() {
 
             {/* Mode B: Photo Upload Scanner */}
             {scanMode === 'upload' && (
-              <div className="flex-1 bg-black relative flex flex-col items-center justify-center p-4 overflow-hidden">
+              <div className="bg-black relative flex flex-col items-center justify-center p-4 overflow-hidden min-h-[340px] aspect-video w-full">
                 {!uploadedImage ? (
                   <label className="border-2 border-dashed border-border hover:border-primary/60 bg-surface-hover/20 hover:bg-surface-hover/40 rounded-2xl w-full h-full flex flex-col items-center justify-center cursor-pointer transition-all p-6 text-center group">
                     <input 

@@ -1,6 +1,6 @@
 import re
 import uuid
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,11 +12,54 @@ from app.schemas.vehicle import (
     VehicleStats,
     ANPRScanRequest,
     ANPRScanResponse,
-    WatchlistEntry
+    WatchlistEntry,
+    ANPREngineInfo,
+    ANPRBenchmarkResponse
 )
 from app.services.vehicle import VehicleService
+from app.services.anpr.engine_manager import anpr_manager
+from app.services.anpr.benchmark import run_anpr_benchmark
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles / ANPR"])
+
+
+@router.get("/engines", response_model=List[ANPREngineInfo])
+async def list_anpr_engines():
+    """
+    Returns all registered ANPR engines (Indian ANPR, FastALPR, and YOLO+EasyOCR).
+    """
+    return anpr_manager.list_engines()
+
+
+@router.get("/benchmark", response_model=ANPRBenchmarkResponse)
+async def get_engines_benchmark():
+    """
+    Returns authentic benchmark comparison results comparing exact full-plate accuracy
+    and latency of all three engines on identical labelled Indian plate images (using persisted results if available).
+    """
+    try:
+        report = run_anpr_benchmark(use_cache=True)
+        return report
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"ANPR benchmark retrieval failed: {str(e)}"
+        )
+
+
+@router.post("/benchmark", response_model=ANPRBenchmarkResponse)
+async def run_engines_benchmark():
+    """
+    Forces live re-execution of the benchmark across all three engines on the labelled dataset.
+    """
+    try:
+        report = run_anpr_benchmark(use_cache=False)
+        return report
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"ANPR benchmark re-run failed: {str(e)}"
+        )
 
 
 @router.get("", response_model=VehicleListResponse)
@@ -60,8 +103,9 @@ async def scan_vehicle_plate(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Scan a car number plate (via uploaded base64 image or manual input),
-    perform ANPR text extraction, save the record permanently to the database,
+    Scan a car or bike number plate (via uploaded base64 image or manual input),
+    perform ANPR text extraction using the selected engine (indian_anpr, fast_alpr, or yolo_easyocr),
+    save the record permanently to the database without duplicates,
     and return the scanned detection result.
     """
     try:
@@ -72,11 +116,14 @@ async def scan_vehicle_plate(
             vehicle_type=payload.vehicle_type,
             camera_name=payload.camera_name or "Live ANPR Camera",
             location_spot=payload.location_spot or "Apartment Main Gate",
-            is_live_stream=bool(payload.is_live_stream)
+            is_live_stream=bool(payload.is_live_stream),
+            engine=payload.engine or "indian_anpr"
         )
         if not success or not record:
             return ANPRScanResponse(
                 success=False,
+                engine=details.get("engine", payload.engine),
+                processing_time_ms=details.get("processing_time_ms", 0.0),
                 message=message or "No license plate detected in frame."
             )
         return ANPRScanResponse(
@@ -93,6 +140,8 @@ async def scan_vehicle_plate(
             security_status=details.get("security_status"),
             consensus_frames=details.get("consensus_frames"),
             consensus_plate=details.get("consensus_plate"),
+            engine=details.get("engine", payload.engine),
+            processing_time_ms=details.get("processing_time_ms", 0.0),
             message=message,
             record=record
         )

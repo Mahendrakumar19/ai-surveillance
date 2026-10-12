@@ -1,0 +1,34 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    # Runs every 5 minutes to prevent Streamlit from sleeping
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping-app:
+    name: Ping Streamlit App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping the Streamlit app URL
+        run: |
+          APP_URL="https://anprsystem.streamlit.app"
+          echo "Pinging $APP_URL ..."
+
+          # set +e so curl errors (redirects, timeouts) don't kill the job
+          set +e
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 --max-redirs 10 "$APP_URL")
+          set -e
+
+          echo "HTTP Response: $RESPONSE"
+
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 400 ]; then
+            echo "✅ App is alive! Response code: $RESPONSE"
+          else
+            echo "⚠️  Response: $RESPONSE — Streamlit may still be waking up (this is normal)"
+          fi
+
+      - name: Log timestamp
+        run: echo "Ping completed at $(date -u)"
