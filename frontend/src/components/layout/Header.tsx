@@ -45,12 +45,12 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   };
 
   return (
-    <header className="h-16 bg-[#070b15]/90 backdrop-blur-xl border-b border-border/80 flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
+    <header className="h-16 bg-surface/90 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
       {/* Left: Mobile Menu Toggle & Page Context */}
       <div className="flex items-center gap-3">
         <button 
           onClick={onMenuClick}
-          className="lg:hidden p-2 -ml-2 text-text-muted hover:text-white hover:bg-white/5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="lg:hidden p-2 -ml-2 text-text-muted hover:text-text hover:bg-surface-hover rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
           aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
@@ -59,11 +59,11 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="flex items-center gap-2.5">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-bold text-text tracking-tight">
                 {formattedTitle}
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 SECURE
               </span>
             </div>
@@ -75,30 +75,30 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center gap-2.5 sm:gap-3.5">
         {/* Global Search Bar */}
         <form onSubmit={handleSearchSubmit} className="relative hidden md:block group">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors pointer-events-none" />
           <input 
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search cameras, events, plates..." 
-            className="bg-surface/80 border border-border/80 rounded-xl pl-9 pr-8 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/60 text-white placeholder-text-muted/60 w-52 lg:w-72 transition-all duration-200"
+            className="bg-surface-card border border-border rounded-xl pl-9 pr-8 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary text-text placeholder-text-muted/70 w-52 lg:w-72 transition-all duration-200"
           />
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-0.5 text-[10px] text-text-muted/60 bg-white/5 px-1 rounded border border-white/10 font-mono">
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-0.5 text-[10px] text-text-muted bg-surface-hover px-1.5 py-0.5 rounded border border-border font-mono font-semibold">
             <Command className="w-2.5 h-2.5" />
             <span>K</span>
           </div>
         </form>
 
         {/* Real-time Clock */}
-        <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border/60 text-xs font-mono text-cyan-300">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-card border border-border text-xs font-mono text-primary dark:text-cyan-300 font-semibold">
+          <Clock className="w-3.5 h-3.5 text-primary dark:text-cyan-400" />
           <span>{currentTime || '00:00:00'}</span>
         </div>
         
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="relative p-2 text-text-muted hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group border border-transparent hover:border-border/60"
+          className="relative p-2 text-text-muted hover:text-text hover:bg-surface-hover rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group border border-transparent hover:border-border"
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
         >
@@ -107,7 +107,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
               className={cn(
                 "w-full h-full absolute inset-0 transition-all duration-300",
                 theme === 'light' 
-                  ? 'opacity-100 rotate-0 scale-100 text-amber-400' 
+                  ? 'opacity-100 rotate-0 scale-100 text-amber-500' 
                   : 'opacity-0 rotate-90 scale-50'
               )} 
             />
@@ -125,7 +125,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         {/* Notifications Button */}
         <button 
           onClick={() => navigate('/events')}
-          className="relative p-2 text-text-muted hover:text-white hover:bg-white/5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 border border-transparent hover:border-border/60"
+          className="relative p-2 text-text-muted hover:text-text hover:bg-surface-hover rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 border border-transparent hover:border-border"
           aria-label="Notifications"
           title="Security Alerts"
         >
@@ -137,14 +137,14 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
         
         {/* User Profile */}
-        <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-border/60">
+        <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-border">
           <div className="text-right hidden sm:block">
-            <div className="text-xs font-semibold text-white leading-tight">Admin Operator</div>
-            <div className="text-[10px] text-cyan-400/90 font-mono">NODE-ALPHA</div>
+            <div className="text-xs font-semibold text-text leading-tight">Admin Operator</div>
+            <div className="text-[10px] text-primary dark:text-cyan-400 font-mono font-medium">NODE-ALPHA</div>
           </div>
           <button 
             onClick={() => navigate('/settings')}
-            className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 ring-offset-2 ring-offset-background"
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary ring-offset-2 ring-offset-background"
             aria-label="User settings"
           >
             <User className="w-4 h-4" />

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    APP_NAME: str = "AI Surveillance System"
+    APP_NAME: str = "Multi Camera AI Surveillance & Real Time Analytics Platform"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
 
@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     YOLOE_CONF: float = 0.35
     YOLOE_IMGSZ: int = 640
     YOLOE_FPS: int = 8
+
+    # YOLOv9-C Official Converted Detection
+    YOLOV9_MODEL_PATH: str = "app/models/yolov9-c-converted.pt"
+    YOLOV9_CONF: float = 0.35
+    YOLOV9_IMGSZ: int = 640
 
     # Authentication
     SECRET_KEY: str = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"

@@ -22,12 +22,18 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.ai.yoloworld_singleton import (
     track_frame as yoloworld_track_frame,
-    remove_session_tracker,
+    remove_session_tracker as yoloworld_remove_session_tracker,
     get_active_classes,
 )
 from app.core.ai.yolo11m_singleton import (
     detect_frame as yolo11m_detect,
     is_loaded as yolo11m_is_loaded,
+)
+from app.core.ai.yolov9_singleton import (
+    track_frame as yolov9_track_frame,
+    detect_frame as yolov9_detect,
+    is_loaded as yolov9_is_loaded,
+    remove_session_tracker as yolov9_remove_session_tracker,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,7 +67,7 @@ def _decode_frame(raw_data: str) -> Optional[np.ndarray]:
         return None
 
 
-async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live"):
+async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live", model_name: str = "yolo-world"):
     """
     Persist confirmed object event to Supabase/PostgreSQL asynchronously.
     Deduplicated by track_id and debounced cooldown.
@@ -129,6 +135,9 @@ async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live")
             if existing:
                 return
 
+            m_id = str(item.get("model", model_name))
+            m_ver = "c" if "yolov9" in m_id.lower() else ("11m" if "11" in m_id else "v2")
+
             event = Event(
                 tenant_id=tenant.id,
                 site_id=site.id,
@@ -140,15 +149,15 @@ async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live")
                 confidence=conf,
                 needs_review=conf < 0.45,
                 is_llm_verified=False,
-                model_id="yolo-world",
-                model_version="v2",
+                model_id=m_id,
+                model_version=m_ver,
                 evidence_reference=f"ByteTrack #{tid}: {raw_name.title()} ({int(conf * 100)}%)",
                 dedupe_key=dedupe_key,
                 track_id=tid,
             )
             db.add(event)
             await db.commit()
-            logger.info(f"[OBJECT-DETECTION] Confirmed track #{tid} ({raw_name}) persisted to events.")
+            logger.info(f"[OBJECT-DETECTION] Confirmed track #{tid} ({raw_name}) persisted to events via {m_id}.")
 
             # Also sync directly to MongoDB Atlas Cloud
             try:
@@ -164,8 +173,8 @@ async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live")
                     "track_id": tid,
                     "dedupe_key": dedupe_key,
                     "observed_at": datetime.now(timezone.utc),
-                    "model_id": "yolo-world",
-                    "model_version": "v2",
+                    "model_id": m_id,
+                    "model_version": m_ver,
                     "evidence_reference": f"ByteTrack #{tid}: {raw_name.title()} ({int(conf * 100)}%)",
                     "state": "OPEN",
                     "severity": "medium" if conf >= 0.70 else "low",
@@ -177,6 +186,7 @@ async def _persist_confirmed_track(item: dict, camera_name: str = "Webcam Live")
                 )
                 logger.info(f"[OBJECT-DETECTION] Confirmed track #{tid} synced to MongoDB Atlas 'events'")
             except Exception as me:
+                logger.debug(f"[OBJECT-DETECTION] MongoDB sync note: {me}")
                 logger.debug(f"[OBJECT-DETECTION] MongoDB sync error: {me}")
 
     except Exception as e:
@@ -256,7 +266,16 @@ async def object_detection_ws(websocket: WebSocket):
 
             # Dispatch inference
             try:
-                if req_model in ("yoloworld", "yolo-world", "yoloe", "open_vocab"):
+                if req_model in ("yolov9", "yolov9-c", "yolo9"):
+                    # YOLOv9-C Official Converted Model with ByteTrack Tracking
+                    result = await asyncio.to_thread(
+                        yolov9_track_frame,
+                        session_id=session_id,
+                        frame=frame,
+                        confidence=conf,
+                        imgsz=cfg["imgsz"],
+                    )
+                elif req_model in ("yoloworld", "yolo-world", "yoloe", "open_vocab"):
                     # YOLO-World Open Vocabulary with ByteTrack Tracking
                     result = await asyncio.to_thread(
                         yoloworld_track_frame,
@@ -266,8 +285,8 @@ async def object_detection_ws(websocket: WebSocket):
                         imgsz=cfg["imgsz"],
                         classes=req_classes,
                     )
-                else:
-                    # YOLO11m fallback
+                elif req_model in ("yolo11m", "yolo11", "yolo11m-coco"):
+                    # YOLO11m detector
                     raw_res = await asyncio.to_thread(
                         yolo11m_detect,
                         frame,
@@ -276,17 +295,22 @@ async def object_detection_ws(websocket: WebSocket):
                     )
                     result = raw_res
                     result["new_confirmed"] = []
+                else:
+                    logger.warning(f"[OBJECT-DETECTION] Unknown requested model '{req_model}'")
+                    await websocket.send_json({"error": f"Unknown model '{req_model}'. Supported: yolov9, yoloe, yolo11m"})
+                    continue
 
             except Exception as e:
                 logger.error(f"[OBJECT-DETECTION] Inference error ({req_model}): {e}")
-                await websocket.send_json({"error": f"Inference error: {str(e)}"})
+                await websocket.send_json({"error": f"Inference error ({req_model}): {str(e)}"})
                 continue
 
             # Trigger background debounced persistence for newly confirmed tracks
             new_confirmed = result.get("new_confirmed", [])
             if auto_save and new_confirmed:
+                m_label = result.get("model", req_model)
                 for item in new_confirmed:
-                    asyncio.create_task(_persist_confirmed_track(item))
+                    asyncio.create_task(_persist_confirmed_track(item, model_name=m_label))
 
             result["active_tracks"] = len(result.get("detections", []))
 
@@ -308,4 +332,5 @@ async def object_detection_ws(websocket: WebSocket):
         except Exception:
             pass
     finally:
-        remove_session_tracker(session_id)
+        yoloworld_remove_session_tracker(session_id)
+        yolov9_remove_session_tracker(session_id)

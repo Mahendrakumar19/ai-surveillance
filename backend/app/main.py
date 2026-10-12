@@ -35,6 +35,14 @@ async def lifespan(app: FastAPI):
         import logging
         logging.warning(f"[MongoDB] Atlas startup connection warning: {e}")
 
+    # Prewarm models in background thread so server starts immediately
+    try:
+        import asyncio
+        from app.core.ai.yolov9_singleton import load_model as load_yolov9
+        asyncio.create_task(asyncio.to_thread(load_yolov9))
+    except Exception as e:
+        logging.warning(f"YOLOv9 background warmup note: {e}")
+
     # Start pipeline orchestrator safely in background
     if settings.DETECTION_ENABLED:
         import asyncio

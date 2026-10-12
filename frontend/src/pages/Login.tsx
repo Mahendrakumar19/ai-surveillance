@@ -69,11 +69,11 @@ export default function Login() {
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            AEGIS <span className="text-gradient-cyan">SURVEILLANCE</span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white uppercase">
+            MULTI-CAMERA <span className="text-gradient-cyan">AI SURVEILLANCE</span>
           </h1>
           <p className="text-xs sm:text-sm text-text-muted mt-1.5 font-mono">
-            Autonomous Neural Security Command Center
+            Real-Time Analytics Platform & Security System
           </p>
 
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-card/80 border border-border/80 text-[11px] font-mono text-cyan-300">
