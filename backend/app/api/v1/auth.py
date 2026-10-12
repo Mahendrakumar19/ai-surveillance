@@ -39,23 +39,18 @@ async def login_for_access_token(
     if user:
         is_valid = await asyncio.to_thread(verify_password, form_data.password, user.hashed_password)
 
-    # Demo mode: if user not found or password incorrect, fallback to admin user
     if not user or not is_valid:
-        user = await repo.get_by_email(email="admin@example.com")
-        if not user:
-            from sqlalchemy import select
-            from app.models.user import User
-            stmt = select(User).where(User.is_active == True)
-            res = await db.execute(stmt)
-            user = res.scalars().first()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    if user and not user.is_active:
-        user.is_active = True
-
-    if not user:
-        # Fallback dummy ID if no user exists at all
-        access_token = create_access_token(subject="00000000-0000-0000-0000-000000000000")
-        return Token(access_token=access_token, token_type="bearer")
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
 
     access_token = create_access_token(subject=str(user.id))
     return Token(access_token=access_token, token_type="bearer")

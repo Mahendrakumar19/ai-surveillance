@@ -129,12 +129,13 @@ class RoleChecker:
             if x_tenant_id and str(membership.tenant_id) == str(x_tenant_id) and m_role_str in allowed_values:
                 return user
 
-        # If user is platform admin or has no tenant restriction, allow if platform admin
-        if any((m.role.value if hasattr(m.role, "value") else str(m.role)) == "platform_admin" for m in user.memberships):
-            return user
+        if not x_tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="X-Tenant-ID header is required",
+            )
 
-        if not x_tenant_id and not user.memberships:
-            # Allow fallback if single-tenant / local development
-            return user
-            
-        return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient role privileges for this tenant",
+        )

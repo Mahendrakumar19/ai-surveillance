@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # Application
@@ -51,6 +52,10 @@ class Settings(BaseSettings):
 
     # Groq AI Vision Key (Loaded dynamically from env)
     GROQ_API_KEY: str = ""
+
+    # Roboflow API Settings (Optional)
+    ROBOFLOW_API_KEY: str = ""
+    ROBOFLOW_MODEL_ID: str = ""
 
     # Real-Time Detection Pipeline
     DETECTION_ENABLED: bool = True
