@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repo" /></a>
+    <a href="https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repo" /></a>
     <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" /></a>
     <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite_8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" /></a>
@@ -223,8 +223,8 @@ flowchart TD
 
 ### Step 1: Clone Repository
 ```bash
-git clone https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git
-cd SURVILENCE-SYSTEM-NEW_CODE
+git clone https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git
+cd AI_SURVILENCE-SYSTEM
 ```
 
 ---
@@ -279,7 +279,7 @@ npm run dev
 ### 🟣 Deploy Backend to Render
 
 1. Log in to [Render.com](https://render.com) and click **New +** → **Web Service**.
-2. Connect your GitHub repository: `https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git`.
+2. Connect your GitHub repository: `https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git`.
 3. Configure settings:
    - **Root Directory**: `backend`
    - **Environment**: `Python 3`
@@ -299,7 +299,7 @@ npm run dev
 ### ▲ Deploy Frontend to Vercel
 
 1. Log in to [Vercel.com](https://vercel.com) and click **Add New...** → **Project**.
-2. Import your GitHub repository: `SURVILENCE-SYSTEM-NEW_CODE`.
+2. Import your GitHub repository: `AI_SURVILENCE-SYSTEM`.
 3. Configure project settings:
    - **Root Directory**: `frontend`
    - **Framework Preset**: `Vite`
@@ -316,7 +316,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```text
-SURVILENCE-SYSTEM-NEW_CODE/
+AI_SURVILENCE-SYSTEM/
 ├── backend/
 │   ├── alembic/                         # Database schema migrations
 │   ├── app/
