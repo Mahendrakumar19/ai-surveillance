@@ -244,10 +244,11 @@ Open your terminal (**PowerShell**, **Command Prompt**, or **Bash**) and clone t
 
 ```bash
 # Clone the repository
-git clone https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git
+git clone https://github.com/rameez-1807/SURVILENCE-SYSTEM-NEW_CODE.git
+# (Alternative Mirror: https://github.com/NighwanTech/AI_SURVILENCE-SYSTEM.git)
 
 # Navigate into the project directory
-cd AI_SURVILENCE-SYSTEM
+cd SURVILENCE-SYSTEM-NEW_CODE
 ```
 
 ---
