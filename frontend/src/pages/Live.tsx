@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Filter, 
@@ -6,9 +6,7 @@ import {
   Grid, 
   LayoutGrid, 
   Maximize2, 
-  RefreshCw, 
   VideoOff, 
-  Activity, 
   X, 
   Radio, 
   Scan, 
@@ -17,10 +15,6 @@ import {
   Camera as CameraIcon,
   Play,
   Pause,
-  Video,
-  ShieldAlert,
-  Sliders,
-  CheckCircle2,
   Sparkles,
   Plus
 } from 'lucide-react';
@@ -204,13 +198,11 @@ export default function Live() {
 
   const fillAllSlots = () => {
     if (cameras.length === 0) return;
-    setActiveCameras(prev => {
-      const updated = Array(layout).fill(null);
-      for (let i = 0; i < layout; i++) {
-        updated[i] = cameras[i % cameras.length];
-      }
-      return updated;
-    });
+    const updated = Array(layout).fill(null);
+    for (let i = 0; i < layout; i++) {
+      updated[i] = cameras[i % cameras.length];
+    }
+    setActiveCameras(updated);
   };
 
   const toggleFullscreen = () => {
@@ -501,7 +493,6 @@ function ActiveCameraStream({
   const [webcamActive, setWebcamActive] = useState(false);
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [timeStr, setTimeStr] = useState<string>('');
-  const [fps, setFps] = useState(30);
 
   // Timecode clock
   useEffect(() => {

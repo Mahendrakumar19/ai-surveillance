@@ -80,7 +80,7 @@ export default function Cameras() {
     }
   };
 
-  const openLiveView = async (id: string, name: string) => {
+  const openLiveView = async (_id: string, _name: string) => {
     navigate('/live');
   };
 
