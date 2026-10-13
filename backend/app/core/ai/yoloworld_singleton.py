@@ -476,3 +476,23 @@ def detect_frame(
         imgsz=imgsz,
         classes=classes,
     )
+
+
+def unload_model() -> None:
+    """Unload YOLO-World model from memory to free RAM."""
+    global _model, _loaded, _session_trackers
+    with _model_lock:
+        if _model is not None:
+            del _model
+            _model = None
+            _loaded = False
+            _session_trackers.clear()
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+            logger.info("[YOLO-World] Model unloaded to free RAM.")

@@ -8,8 +8,17 @@ registers routers, and sets up Swagger/OpenAPI documentation.
 import os
 from contextlib import asynccontextmanager
 
-# Ensure writable Ultralytics config dir on cloud environments (e.g. Render)
+# Ensure low memory footprint and writable config dir on cloud environments (e.g. Render 512MB)
 os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
+os.environ.setdefault("MALLOC_ARENA_MAX", "2")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
+try:
+    import torch
+    torch.set_num_threads(min(2, os.cpu_count() or 1))
+except Exception:
+    pass
 
 from fastapi import FastAPI
 
@@ -63,14 +72,7 @@ async def lifespan(app: FastAPI):
     import asyncio
     trimmer_task = asyncio.create_task(_periodic_memory_trimmer())
 
-    # Prewarm models in background thread so server starts immediately
-    try:
-        from app.core.ai.yolov9_singleton import load_model as load_yolov9
-        from app.core.ai.yoloe_singleton import load_model as load_yoloe
-        asyncio.create_task(asyncio.to_thread(load_yolov9))
-        asyncio.create_task(asyncio.to_thread(load_yoloe))
-    except Exception as e:
-        logging.warning(f"AI models background warmup note: {e}")
+    # Models are loaded on-demand per request to preserve RAM under cloud memory limits (512MB)
 
     # Start pipeline orchestrator safely in background
     if settings.DETECTION_ENABLED:

@@ -527,6 +527,26 @@ def is_loaded() -> bool:
     return _loaded and _model is not None
 
 
+def unload_model() -> None:
+    """Unload YOLOv9 model from memory to free RAM."""
+    global _model, _loaded, _session_trackers
+    with _model_lock:
+        if _model is not None:
+            del _model
+            _model = None
+            _loaded = False
+            _session_trackers.clear()
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+            logger.info("[YOLOv9] Model unloaded to free RAM.")
+
+
 def get_class_names() -> Dict[int, str]:
     """Return dictionary of 80 COCO class names."""
     return dict(_model_names)

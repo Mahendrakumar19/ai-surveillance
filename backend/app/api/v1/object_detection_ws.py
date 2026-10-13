@@ -24,26 +24,70 @@ from app.core.ai.yoloe_singleton import (
     track_frame as yoloe_track_frame,
     remove_session_tracker as yoloe_remove_session_tracker,
     is_loaded as yoloe_is_loaded,
+    unload_model as yoloe_unload_model,
 )
 from app.core.ai.yoloworld_singleton import (
     track_frame as yoloworld_track_frame,
     remove_session_tracker as yoloworld_remove_session_tracker,
     get_active_classes,
+    is_loaded as yoloworld_is_loaded,
+    unload_model as yoloworld_unload_model,
 )
 from app.core.ai.yolo11m_singleton import (
     detect_frame as yolo11m_detect,
     is_loaded as yolo11m_is_loaded,
+    unload_model as yolo11m_unload_model,
 )
 from app.core.ai.yolov9_singleton import (
     track_frame as yolov9_track_frame,
     detect_frame as yolov9_detect,
     is_loaded as yolov9_is_loaded,
     remove_session_tracker as yolov9_remove_session_tracker,
+    unload_model as yolov9_unload_model,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Live Object Detection WebSocket"])
+
+_current_active_model: Optional[str] = None
+
+
+def _evict_other_models(target_model: str) -> None:
+    """Ensure only ONE model is resident in RAM at a time to stay under 512MB cloud RAM limit."""
+    global _current_active_model
+    if _current_active_model == target_model:
+        return
+    _current_active_model = target_model
+
+    if target_model in ("yoloe", "yoloe-pf", "yoloe_autodetect", "yoloe-autodetect"):
+        if yolov9_is_loaded():
+            yolov9_unload_model()
+        if yoloworld_is_loaded():
+            yoloworld_unload_model()
+        if yolo11m_is_loaded():
+            yolo11m_unload_model()
+    elif target_model in ("yolov9", "yolov9-c", "yolo9"):
+        if yoloe_is_loaded():
+            yoloe_unload_model()
+        if yoloworld_is_loaded():
+            yoloworld_unload_model()
+        if yolo11m_is_loaded():
+            yolo11m_unload_model()
+    elif target_model in ("yoloworld", "yolo-world", "open_vocab"):
+        if yoloe_is_loaded():
+            yoloe_unload_model()
+        if yolov9_is_loaded():
+            yolov9_unload_model()
+        if yolo11m_is_loaded():
+            yolo11m_unload_model()
+    elif target_model in ("yolo11m", "yolo11", "yolo11m-coco"):
+        if yoloe_is_loaded():
+            yoloe_unload_model()
+        if yolov9_is_loaded():
+            yolov9_unload_model()
+        if yoloworld_is_loaded():
+            yoloworld_unload_model()
 
 
 def _get_detection_settings():
@@ -268,6 +312,9 @@ async def object_detection_ws(websocket: WebSocket):
                 conf = cfg["confidence"]
 
             frame_count += 1
+
+            # Keep only the requested model in memory to prevent exceeding 512MB RAM
+            _evict_other_models(req_model)
 
             # Dispatch inference
             try:

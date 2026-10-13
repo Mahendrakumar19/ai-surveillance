@@ -506,8 +506,29 @@ def detect_frame(
     )
 
 
+def unload_model() -> None:
+    """Unload YOLOE model from memory to free RAM."""
+    global _model, _loaded, _session_trackers
+    with _model_lock:
+        if _model is not None:
+            del _model
+            _model = None
+            _loaded = False
+            _session_trackers.clear()
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+            logger.info("[YOLOE] Model unloaded to free RAM.")
+
+
 __all__ = [
     "load_model",
+    "unload_model",
     "detect_frame",
     "track_frame",
     "get_active_classes",
