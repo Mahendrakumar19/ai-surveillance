@@ -134,10 +134,16 @@ class CaptureWorker:
             self._set_state(CameraState.RECONNECTING)
             with self._lock:
                 self.health.reconnect_count += 1
+                reconnect_count = self.health.reconnect_count
                 
-            logger.warning(
-                f"Camera {self.camera_id} connection failed. Retrying in {self.current_reconnect_delay}s"
-            )
+            if reconnect_count == 1:
+                logger.info(
+                    f"Camera {self.camera_id} stream currently offline. Retrying in background..."
+                )
+            else:
+                logger.debug(
+                    f"Camera {self.camera_id} connection retry in {self.current_reconnect_delay}s"
+                )
             
             # Wait for backoff duration or until stopped
             if self._stop_event.wait(self.current_reconnect_delay):
