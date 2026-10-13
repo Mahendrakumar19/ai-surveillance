@@ -55,8 +55,10 @@ backend/storage/evidence/*
 alembic/versions/*.pyc
 
 # Model Weights (Ignore large files >100MB)
-weights/
-backend/weights/
+/weights/
+backend/weights/*
+!backend/weights/yoloe-11s-seg-pf.pt
+!backend/weights/.gitkeep
 backend/weights/clip/
 
 # Keep needed YOLO & ANPR model weights under 50MB
@@ -67,6 +69,7 @@ backend/*.ts
 !backend/yolov8s-worldv2.pt
 !backend/app/models/yolo11m.pt
 !backend/app/models/yolov9-c-converted.pt
+!backend/weights/yoloe-11s-seg-pf.pt
 !models/best.pt
 !references/indian-anpr/best.pt
 

@@ -14,7 +14,11 @@ services:
         value: AI Surveillance System
       - key: APP_VERSION
         value: 1.0.0
+      - key: YOLO_CONFIG_DIR
+        value: /tmp/Ultralytics
       - key: DATABASE_URL
+        sync: false
+      - key: MONGODB_URL
         sync: false
       - key: SUPABASE_URL
         sync: false

@@ -129,9 +129,12 @@ def load_model() -> None:
             head_fused = getattr(getattr(_model.model, "model", [None])[-1], "is_fused", False)
             if not is_pf and not head_fused and hasattr(_model, "get_vocab") and hasattr(_model, "set_vocab"):
                 logger.info(f"[YOLOE] Re-parameterizing promptable model into Prompt-Free with {len(EVERYDAY_CLASSES)} everyday classes...")
-                vocab = _model.get_vocab(EVERYDAY_CLASSES)
-                _model.set_vocab(vocab, EVERYDAY_CLASSES)
-                logger.info("[YOLOE] Re-parameterization to Prompt-Free completed.")
+                try:
+                    vocab = _model.get_vocab(EVERYDAY_CLASSES)
+                    _model.set_vocab(vocab, EVERYDAY_CLASSES)
+                    logger.info("[YOLOE] Re-parameterization to Prompt-Free completed.")
+                except Exception as ve:
+                    logger.warning(f"[YOLOE] Vocabulary re-parameterization note: {ve}. Continuing with standard classes.")
 
             # Extract model class names
             if hasattr(_model, "names") and isinstance(_model.names, dict):

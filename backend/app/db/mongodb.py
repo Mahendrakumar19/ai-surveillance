@@ -106,6 +106,10 @@ async def init_mongo_indexes() -> None:
     Initialize indexes on MongoDB Atlas collections for high-speed queries.
     Safe and idempotent.
     """
+    if not getattr(settings, "MONGODB_URL", ""):
+        logger.info("[MongoDB] MONGODB_URL is not configured; running without MongoDB Atlas.")
+        return
+
     try:
         db = get_async_db()
 

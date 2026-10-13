@@ -5,7 +5,11 @@ Main application entry point. Configures the FastAPI app,
 registers routers, and sets up Swagger/OpenAPI documentation.
 """
 
+import os
 from contextlib import asynccontextmanager
+
+# Ensure writable Ultralytics config dir on cloud environments (e.g. Render)
+os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
 
 from fastapi import FastAPI
 
@@ -45,14 +49,15 @@ async def lifespan(app: FastAPI):
     if not settings.GROQ_API_KEY:
         logging.info("GROQ_API_KEY optional — open-set object naming (/events/vision-scan) is disabled unless configured.")
     
-    # Initialize MongoDB Atlas Cloud connection & indexes
-    try:
-        from app.db.mongodb import init_mongo_indexes, close_mongo_connections
-        await init_mongo_indexes()
-        print("[MongoDB] Connected to MongoDB Atlas Cloud Cluster0")
-    except Exception as e:
-        import logging
-        logging.warning(f"[MongoDB] Atlas startup connection warning: {e}")
+    # Initialize MongoDB Atlas Cloud connection & indexes if MONGODB_URL is configured
+    if getattr(settings, "MONGODB_URL", None):
+        try:
+            from app.db.mongodb import init_mongo_indexes
+            await init_mongo_indexes()
+            print("[MongoDB] Connected to MongoDB Atlas Cloud Cluster0")
+        except Exception as e:
+            import logging
+            logging.warning(f"[MongoDB] Atlas startup connection note: {e}")
 
     # Launch background periodic memory maintenance
     import asyncio
