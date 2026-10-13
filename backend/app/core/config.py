@@ -78,10 +78,10 @@ class Settings(BaseSettings):
     YOLOWORLD_CONF: float = 0.35
     YOLOWORLD_IMGSZ: int = 640
     YOLOWORLD_DEFAULT_CLASSES: str = "mobile phone,watch,pen,laptop,tablet,person,bag,backpack,bottle,keys"
-    YOLOE_MODEL_PATH: str = "models/yolov8s-worldv2.pt"
+    YOLOE_MODEL_PATH: str = "weights/yoloe-11s-seg-pf.pt"
     YOLOE_CONF: float = 0.35
     YOLOE_IMGSZ: int = 640
-    YOLOE_FPS: int = 8
+    YOLOE_FPS: int = 15
 
     # YOLOv9-C Official Converted Detection
     YOLOV9_MODEL_PATH: str = "app/models/yolov9-c-converted.pt"

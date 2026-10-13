@@ -78,9 +78,9 @@ export default function Objects() {
   const [selectedEvent, setSelectedEvent] = useState<ObjectDetectionEvent | null>(null);
 
   // ── Live Detection Model & Sensitivity State ──
-  const [selectedModel, setSelectedModel] = useState<'yolov9' | 'yoloe' | 'yolo11m'>('yolov9');
+  const [selectedModel, setSelectedModel] = useState<'yoloe' | 'yolov9' | 'yoloworld' | 'yolo11m'>('yoloe');
   const [liveConfidence, setLiveConfidence] = useState<number>(0.35);
-  const selectedModelRef = useRef<'yolov9' | 'yoloe' | 'yolo11m'>('yolov9');
+  const selectedModelRef = useRef<'yoloe' | 'yolov9' | 'yoloworld' | 'yolo11m'>('yoloe');
   const liveConfidenceRef = useRef<number>(0.35);
 
   // Open-Vocabulary Target Classes for YOLO-World
@@ -203,22 +203,46 @@ export default function Objects() {
 
     if (frameW === 0 || frameH === 0) return;
 
-    const scaleX = displayW / frameW;
-    const scaleY = displayH / frameH;
+    // Calculate aspect-ratio aware scaling for object-cover
+    const videoRatio = frameW / frameH;
+    const containerRatio = displayW / displayH;
+
+    let renderW = displayW;
+    let renderH = displayH;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (containerRatio > videoRatio) {
+      renderW = displayW;
+      renderH = displayW / videoRatio;
+      offsetY = (displayH - renderH) / 2;
+    } else {
+      renderH = displayH;
+      renderW = displayH * videoRatio;
+      offsetX = (displayW - renderW) / 2;
+    }
+
+    const scaleX = renderW / frameW;
+    const scaleY = renderH / frameH;
 
     detections.forEach((det) => {
-      const x1 = det.x1 * scaleX;
-      const y1 = det.y1 * scaleY;
-      const x2 = det.x2 * scaleX;
-      const y2 = det.y2 * scaleY;
-      const w = x2 - x1;
-      const h = y2 - y1;
+      const rawX1 = det.x1 * scaleX + offsetX;
+      const rawY1 = det.y1 * scaleY + offsetY;
+      const rawX2 = det.x2 * scaleX + offsetX;
+      const rawY2 = det.y2 * scaleY + offsetY;
+
+      const x1 = Math.max(0, Math.min(displayW, rawX1));
+      const y1 = Math.max(0, Math.min(displayH, rawY1));
+      const x2 = Math.max(0, Math.min(displayW, rawX2));
+      const y2 = Math.max(0, Math.min(displayH, rawY2));
+      const w = Math.max(2, x2 - x1);
+      const h = Math.max(2, y2 - y1);
       const conf = Math.round(det.confidence * 100);
-      const trackBadge = det.track_id !== undefined ? `[#${det.track_id}] ` : '';
+      const trackBadge = det.track_id !== undefined && det.track_id !== null ? `[#${det.track_id}] ` : '';
       const label = `${trackBadge}${det.name.toUpperCase()} ${conf}%`;
 
       // Tracked object color palette
-      const isTracked = det.track_id !== undefined;
+      const isTracked = det.track_id !== undefined && det.track_id !== null;
       const isHigh = det.confidence >= 0.7;
       const boxColor = isTracked ? '#06b6d4' : (isHigh ? '#10B981' : '#f59e0b');
       const accentColor = isTracked ? '#38bdf8' : (isHigh ? '#34D399' : '#fbbf24');
@@ -355,7 +379,7 @@ export default function Objects() {
               frame: b64,
               model: selectedModelRef.current,
               confidence: liveConfidenceRef.current,
-              classes: targetClassesRef.current,
+              classes: selectedModelRef.current === 'yoloworld' ? targetClassesRef.current : undefined,
               auto_save: autoSave
             }));
             lastSendTime = Date.now();
@@ -396,6 +420,14 @@ export default function Objects() {
           setLiveActiveTracks(data.active_tracks !== undefined ? data.active_tracks : dets.length);
           setLiveInferenceMs(data.inference_ms || 0);
           setLiveFrameSize({ w: data.frame_width || 0, h: data.frame_height || 0 });
+
+          // Voice announcement for identified foreground everyday object
+          if (voiceEnabled && dets.length > 0) {
+            const topObj = dets.find((d: any) => d.name.toLowerCase() !== 'person') || dets[0];
+            if (topObj && topObj.confidence >= 0.35) {
+              announceObjectName(topObj.name, topObj.confidence);
+            }
+          }
 
           // If new confirmed tracks were persisted to database, notify user briefly
           if (data.new_confirmed && data.new_confirmed.length > 0) {
@@ -1205,7 +1237,20 @@ export default function Objects() {
 
                 {/* Model Selector Pill (Live Mode Only) */}
                 {scanMode === 'live' && (
-                  <div className="flex bg-background border border-border rounded-xl p-0.5 text-xs">
+                  <div className="flex bg-background border border-border rounded-xl p-0.5 text-xs flex-wrap gap-0.5">
+                    <button
+                      onClick={() => setSelectedModel('yoloe')}
+                      title="Genuine Ultralytics YOLOE Prompt-Free neural network with ByteTrack. Automatically identifies everyday objects without manual class input."
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition-all",
+                        selectedModel === 'yoloe' 
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs" 
+                          : "text-text-muted hover:text-text"
+                      )}
+                    >
+                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                      YOLOE Auto Detect (Prompt-Free)
+                    </button>
                     <button
                       onClick={() => setSelectedModel('yolov9')}
                       title="Official YOLOv9-C detector with ByteTrack multi-object tracking (COCO 80 classes)"
@@ -1220,16 +1265,16 @@ export default function Objects() {
                       YOLOv9-C (Official + ByteTrack)
                     </button>
                     <button
-                      onClick={() => setSelectedModel('yoloe')}
-                      title="YOLO-World Open-Vocabulary detector with ByteTrack multi-object tracking"
+                      onClick={() => setSelectedModel('yoloworld')}
+                      title="YOLO-World Open-Vocabulary detector with custom class vocabulary and ByteTrack tracking"
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition-all",
-                        selectedModel === 'yoloe' 
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs" 
+                        selectedModel === 'yoloworld' 
+                          ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs" 
                           : "text-text-muted hover:text-text"
                       )}
                     >
-                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                      <Box className="w-3 h-3 text-indigo-400" />
                       YOLO-World (Open-Vocab)
                     </button>
                     <button
@@ -1301,6 +1346,22 @@ export default function Objects() {
               </div>
             </div>
 
+            {/* YOLOE Prompt-Free Official Model Banner */}
+            {scanMode === 'live' && selectedModel === 'yoloe' && (
+              <div className="px-4 py-2 bg-gradient-to-r from-cyan-950/40 via-surface/80 to-surface/70 border-b border-border/80 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 text-text-muted text-[11px]">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />
+                  <span className="font-semibold text-text">YOLOE Prompt-Free (Auto Detect) Active</span>
+                  <span className="hidden sm:inline text-text-muted">· Real-Time Everyday Objects (laptop, phone, bottle, cup, chair, person, pen, watch, etc.) without manual class input</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 text-[10px] font-semibold">
+                    Checkpoint: yoloe-11s-seg-pf.pt
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* YOLOv9-C Official Model Banner */}
             {scanMode === 'live' && selectedModel === 'yolov9' && (
               <div className="px-4 py-2 bg-surface/70 border-b border-border/80 flex items-center justify-between text-xs">
@@ -1318,7 +1379,7 @@ export default function Objects() {
             )}
 
             {/* Open-Vocabulary Class Manager Bar (Live YOLO-World mode) */}
-            {scanMode === 'live' && selectedModel === 'yoloe' && (
+            {scanMode === 'live' && selectedModel === 'yoloworld' && (
               <div className="px-4 py-2.5 bg-surface/70 border-b border-border/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap flex-1">
                   <div className="flex items-center gap-1.5 text-text-muted font-semibold text-[11px] shrink-0">
@@ -1433,10 +1494,19 @@ export default function Objects() {
                       <div className="p-4 bg-emerald-500/10 text-emerald-400 rounded-full inline-block mb-1 border border-emerald-500/20">
                         <Eye className="w-8 h-8" />
                       </div>
-                      <h4 className="text-sm font-bold text-white">YOLO-World Open-Vocabulary & ByteTrack Live Detection</h4>
+                      <h4 className="text-sm font-bold text-white">
+                        {selectedModel === 'yoloe' ? 'YOLOE Prompt-Free (Auto Detect) & ByteTrack Live Detection' :
+                         selectedModel === 'yolov9' ? 'YOLOv9-C Official & ByteTrack Live Detection' :
+                         selectedModel === 'yoloworld' ? 'YOLO-World Open-Vocabulary Live Detection' :
+                         'YOLO11m Live Real-Time Detection'}
+                      </h4>
                       <p className="text-xs text-text-muted max-w-sm mx-auto">
-                        Real-time open-vocabulary inference with stable ByteTrack multi-object tracking.
-                        Detect any custom object (mobile phone, watch, pen, laptop, tablet, etc.) with bounding boxes, confidence, and persistent track IDs.
+                        {selectedModel === 'yoloe' 
+                          ? 'Zero-prompt everyday multi-object detection powered by genuine YOLOE neural network and ByteTrack. Automatically identifies laptop, phone, bottle, cup, chair, person, pen, watch, backpack, etc. with accurate bounding boxes, confidence, and persistent track IDs.'
+                          : selectedModel === 'yoloworld'
+                          ? 'Real-time open-vocabulary inference with stable ByteTrack multi-object tracking. Detect any custom object with bounding boxes, confidence, and persistent track IDs.'
+                          : 'Real-time object detection with persistent identity tracking across consecutive video frames.'
+                        }
                       </p>
                       <button
                         onClick={startLiveCamera}
@@ -1740,7 +1810,7 @@ export default function Objects() {
                 </div>
                 {isLiveCameraActive && (
                   <span className="text-[11px] font-mono text-text-muted">
-                    Active Tracks: <span className="text-cyan-400 font-bold">{liveActiveTracks}</span> · Model: <span className="text-amber-400 font-bold uppercase">{selectedModel}</span>
+                    Active Tracks: <span className="text-cyan-400 font-bold">{liveActiveTracks}</span> · Model: <span className="text-cyan-400 font-bold uppercase">{selectedModel === 'yoloe' ? 'YOLOE (Prompt-Free)' : selectedModel}</span>
                   </span>
                 )}
               </div>

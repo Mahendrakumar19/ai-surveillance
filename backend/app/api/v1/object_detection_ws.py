@@ -20,6 +20,11 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.core.ai.yoloe_singleton import (
+    track_frame as yoloe_track_frame,
+    remove_session_tracker as yoloe_remove_session_tracker,
+    is_loaded as yoloe_is_loaded,
+)
 from app.core.ai.yoloworld_singleton import (
     track_frame as yoloworld_track_frame,
     remove_session_tracker as yoloworld_remove_session_tracker,
@@ -266,7 +271,17 @@ async def object_detection_ws(websocket: WebSocket):
 
             # Dispatch inference
             try:
-                if req_model in ("yolov9", "yolov9-c", "yolo9"):
+                if req_model in ("yoloe", "yoloe-pf", "yoloe_autodetect", "yoloe-autodetect"):
+                    # Genuine YOLOE Prompt-Free with ByteTrack Tracking (Zero-prompt Auto Detect)
+                    result = await asyncio.to_thread(
+                        yoloe_track_frame,
+                        session_id=session_id,
+                        frame=frame,
+                        confidence=conf,
+                        imgsz=cfg["imgsz"],
+                        classes=req_classes,
+                    )
+                elif req_model in ("yolov9", "yolov9-c", "yolo9"):
                     # YOLOv9-C Official Converted Model with ByteTrack Tracking
                     result = await asyncio.to_thread(
                         yolov9_track_frame,
@@ -275,7 +290,7 @@ async def object_detection_ws(websocket: WebSocket):
                         confidence=conf,
                         imgsz=cfg["imgsz"],
                     )
-                elif req_model in ("yoloworld", "yolo-world", "yoloe", "open_vocab"):
+                elif req_model in ("yoloworld", "yolo-world", "open_vocab"):
                     # YOLO-World Open Vocabulary with ByteTrack Tracking
                     result = await asyncio.to_thread(
                         yoloworld_track_frame,
@@ -297,7 +312,7 @@ async def object_detection_ws(websocket: WebSocket):
                     result["new_confirmed"] = []
                 else:
                     logger.warning(f"[OBJECT-DETECTION] Unknown requested model '{req_model}'")
-                    await websocket.send_json({"error": f"Unknown model '{req_model}'. Supported: yolov9, yoloe, yolo11m"})
+                    await websocket.send_json({"error": f"Unknown model '{req_model}'. Supported: yoloe, yolov9, yoloworld, yolo11m"})
                     continue
 
             except Exception as e:
@@ -332,5 +347,6 @@ async def object_detection_ws(websocket: WebSocket):
         except Exception:
             pass
     finally:
+        yoloe_remove_session_tracker(session_id)
         yoloworld_remove_session_tracker(session_id)
         yolov9_remove_session_tracker(session_id)
