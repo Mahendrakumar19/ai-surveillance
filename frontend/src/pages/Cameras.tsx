@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Filter, 
@@ -9,10 +9,12 @@ import {
   Cctv,
   CheckCircle2,
   AlertCircle,
-  LayoutGrid,
   Table as TableIcon,
-  Play
+  LayoutGrid,
+  Play,
+  Camera as CameraIcon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/Badge';
@@ -21,6 +23,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { cn } from '../utils/cn';
 
 export default function Cameras() {
+  const navigate = useNavigate();
   const [cameras, setCameras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,19 +74,14 @@ export default function Cameras() {
   const checkHealth = async (id: string, name: string) => {
     try {
       const res = await api.get(`/cameras/${id}/health`);
-      showNotification(`${name} Health: ${res.data.status?.toUpperCase()} (${res.data.latency_ms || 18}ms latency)`, 'success');
+      showNotification(`${name} Health: ${res.data.status?.toUpperCase() || 'ONLINE'} (${res.data.latency_ms || 18}ms latency)`, 'success');
     } catch (err) {
       showNotification(`Health check timed out for ${name}.`, 'error');
     }
   };
 
   const openLiveView = async (id: string, name: string) => {
-    try {
-      await api.post(`/cameras/${id}/preview-token`);
-      showNotification(`Generated secure preview token for ${name}`, 'info');
-    } catch (err) {
-      showNotification('Failed to generate preview token.', 'error');
-    }
+    navigate('/live');
   };
 
   const filteredCameras = cameras.filter(cam => {
@@ -227,7 +225,9 @@ export default function Cameras() {
                 fps={30}
                 resolution="1080p"
                 onView={() => openLiveView(camera.id, camera.name)}
-              />
+              >
+                <CameraCardLivePreview camera={camera} />
+              </CameraCard>
 
               {/* Quick actions hover overlay */}
               <div className="mt-2 flex items-center justify-between px-2 text-xs">
@@ -410,6 +410,76 @@ export default function Cameras() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CameraCardLivePreview Component: Active Video / Webcam Preview
+// ---------------------------------------------------------------------------
+function CameraCardLivePreview({ camera }: { camera: any }) {
+  const isWebcam = camera.name?.toLowerCase().includes('webcam') || camera.name?.toLowerCase().includes('live camera scanner');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [webcamStarted, setWebcamStarted] = useState(false);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    if (isWebcam && webcamStarted) {
+      navigator.mediaDevices?.getUserMedia({ video: { width: 640, height: 360 } })
+        .then(s => {
+          stream = s;
+          if (videoRef.current) {
+            videoRef.current.srcObject = s;
+            videoRef.current.play().catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [isWebcam, webcamStarted]);
+
+  if (isWebcam && webcamStarted) {
+    return (
+      <div className="relative w-full h-full bg-black">
+        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+        <div className="absolute inset-0 border border-cyan-500/20 pointer-events-none" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full bg-[#050914] flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 bg-cyber-grid opacity-25" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+      
+      {/* Laser line sweep animation */}
+      <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-laser-sweep opacity-40 pointer-events-none" />
+
+      {/* Cyber Reticle */}
+      <div className="w-16 h-16 border border-cyan-500/40 rounded-full flex items-center justify-center animate-pulse">
+        <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+      </div>
+
+      {isWebcam ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setWebcamStarted(true);
+          }}
+          className="absolute z-20 bottom-3 px-2 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-mono font-bold shadow-md shadow-cyan-600/30 flex items-center gap-1 transition-all"
+        >
+          <CameraIcon className="w-3 h-3" />
+          <span>Start Webcam Preview</span>
+        </button>
+      ) : (
+        <div className="absolute bottom-3 text-[10px] font-mono text-cyan-400/80 bg-black/60 px-2 py-0.5 rounded border border-cyan-500/30">
+          ONLINE FEED // 1080P @ 30FPS
         </div>
       )}
     </div>

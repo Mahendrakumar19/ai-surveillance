@@ -32,10 +32,13 @@ if _is_postgres:
         },
     })
 else:
+    from sqlalchemy.pool import NullPool
     _engine_kwargs.update({
-        "pool_size": 1,
-        "max_overflow": 0,
-        "connect_args": {},
+        "poolclass": NullPool,
+        "connect_args": {
+            "timeout": 30.0,
+            "check_same_thread": False,
+        },
     })
 
 # Async engine

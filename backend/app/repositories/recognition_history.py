@@ -195,7 +195,10 @@ class RecognitionHistoryRepository:
                 else:
                     trend_map[d_key]["unknown"] += 1
 
-        trend_data = [{"time": k, "recognized": v["recognized"], "unknown": v["unknown"]} for k, v in trend_map.items()]
+        trend_data = [
+            {"time": k, "recognized": v["recognized"], "unknown": v["unknown"]}
+            for k, v in sorted(trend_map.items(), key=lambda item: item[0])
+        ]
 
         # Distribution Chart Data
         total_rec_in_window = sum(1 for r in window_records if r.status == "Recognized")
