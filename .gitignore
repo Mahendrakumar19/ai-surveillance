@@ -60,6 +60,7 @@ backend/weights/
 backend/weights/clip/
 
 # Keep needed YOLO & ANPR model weights under 50MB
+backend/*.ts
 *.pt
 !backend/best.pt
 !backend/yolov8n.pt
