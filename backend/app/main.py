@@ -16,6 +16,25 @@ from app.core.ai.yolo11m_singleton import load_model as load_yolo11m
 from app.core.ai.yoloworld_singleton import load_model as load_yoloworld
 
 
+async def _periodic_memory_trimmer():
+    """Periodic memory maintenance to reclaim cyclic references and flush CUDA cache."""
+    import gc
+    while True:
+        try:
+            await asyncio.sleep(30)
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown events."""
@@ -35,9 +54,12 @@ async def lifespan(app: FastAPI):
         import logging
         logging.warning(f"[MongoDB] Atlas startup connection warning: {e}")
 
+    # Launch background periodic memory maintenance
+    import asyncio
+    trimmer_task = asyncio.create_task(_periodic_memory_trimmer())
+
     # Prewarm models in background thread so server starts immediately
     try:
-        import asyncio
         from app.core.ai.yolov9_singleton import load_model as load_yolov9
         from app.core.ai.yoloe_singleton import load_model as load_yoloe
         asyncio.create_task(asyncio.to_thread(load_yolov9))
@@ -47,7 +69,6 @@ async def lifespan(app: FastAPI):
 
     # Start pipeline orchestrator safely in background
     if settings.DETECTION_ENABLED:
-        import asyncio
         try:
             asyncio.create_task(pipeline_orchestrator.start())
         except Exception as e:
@@ -56,6 +77,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     print(f"[STOP] Shutting down {settings.APP_NAME}")
+    trimmer_task.cancel()
     try:
         from app.db.mongodb import close_mongo_connections
         close_mongo_connections()

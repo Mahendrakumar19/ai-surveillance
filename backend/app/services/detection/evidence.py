@@ -34,7 +34,7 @@ class EvidenceCaptureManager:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, max_buffer_frames: int = 150):
+    def __new__(cls, max_buffer_frames: int = 2):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(EvidenceCaptureManager, cls).__new__(cls)
@@ -42,7 +42,8 @@ class EvidenceCaptureManager:
             return cls._instance
 
     def _init_state(self, max_buffer_frames: int):
-        self.max_buffer_frames = max_buffer_frames
+        # Bound tightly to 2 frames: only the latest frame is needed for event snapshots
+        self.max_buffer_frames = max(1, min(max_buffer_frames, 3))
         # camera_id -> deque of (frame_data, timestamp, frame_id)
         self._buffers: Dict[uuid.UUID, collections.deque] = collections.defaultdict(
             lambda: collections.deque(maxlen=self.max_buffer_frames)
@@ -50,11 +51,13 @@ class EvidenceCaptureManager:
         self._buf_lock = threading.Lock()
 
     def push_frame(self, camera_id: uuid.UUID, frame_data: np.ndarray, frame_id: int):
-        """Add a frame to the camera's rolling buffer."""
-        if frame_data is None or not isinstance(frame_data, np.ndarray):
+        """Add latest frame to the camera's rolling buffer without runaway memory duplication."""
+        if frame_data is None or not isinstance(frame_data, np.ndarray) or frame_data.size == 0:
             return
         with self._buf_lock:
-            self._buffers[camera_id].append((frame_data.copy(), time.time(), frame_id))
+            buf = self._buffers[camera_id]
+            # Replace oldest frame in-place to avoid memory accumulation
+            buf.append((frame_data.copy(), time.time(), frame_id))
 
     def capture_snapshot(
         self,

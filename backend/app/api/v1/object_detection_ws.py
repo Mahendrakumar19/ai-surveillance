@@ -338,6 +338,13 @@ async def object_detection_ws(websocket: WebSocket):
 
             await websocket.send_json(result)
 
+            # Explicitly dereference large frame buffers and results
+            del raw_frame, frame, result, data
+
+            if frame_count % 60 == 0:
+                import gc
+                gc.collect()
+
     except WebSocketDisconnect:
         logger.info(f"[OBJECT-DETECTION] Client disconnected (session={session_id}, frames={frame_count})")
     except Exception as e:

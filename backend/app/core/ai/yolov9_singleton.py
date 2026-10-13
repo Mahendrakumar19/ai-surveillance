@@ -34,8 +34,9 @@ _device: str = "cpu"
 _loaded: bool = False
 
 # Per-session trackers for ByteTrack tracking
-_session_trackers: Dict[str, "SessionTracker"] = {}
+_session_trackers: Dict[str, Tuple["SessionTracker", float]] = {}
 _session_lock = threading.Lock()
+_yolov9_frame_counter = 0
 
 
 def _resolve_model_path() -> str:
@@ -248,15 +249,31 @@ class SessionTracker:
         for t in stale:
             self._track_confirmations.pop(t, None)
             self._last_seen.pop(t, None)
+            for k in list(self._saved_tracks.keys()):
+                if k[0] == t:
+                    self._saved_tracks.pop(k, None)
 
         return tracked_results, new_confirmed
 
 
 def get_or_create_tracker(session_id: str) -> SessionTracker:
+    now = time.time()
     with _session_lock:
+        # Periodic TTL cleanup of stale sessions older than 60s
+        if len(_session_trackers) > 5:
+            stale = [sid for sid, (_, last_seen) in _session_trackers.items() if (now - last_seen) > 60.0]
+            for sid in stale:
+                _session_trackers.pop(sid, None)
+
         if session_id not in _session_trackers:
-            _session_trackers[session_id] = SessionTracker(session_id)
-        return _session_trackers[session_id]
+            if len(_session_trackers) >= 20:
+                oldest_sid = min(_session_trackers.keys(), key=lambda k: _session_trackers[k][1])
+                _session_trackers.pop(oldest_sid, None)
+            _session_trackers[session_id] = (SessionTracker(session_id), now)
+        else:
+            tracker, _ = _session_trackers[session_id]
+            _session_trackers[session_id] = (tracker, now)
+        return _session_trackers[session_id][0]
 
 
 def remove_session_tracker(session_id: str) -> None:
@@ -340,6 +357,7 @@ def _run_raw_inference(
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     if len(det) == 0:
+        del tensor, pred, det
         return np.empty((0, 4)), np.empty((0,)), np.empty((0,), dtype=int), elapsed_ms
 
     # 6. Rescale boxes back to original frame dimensions
@@ -350,6 +368,20 @@ def _run_raw_inference(
     xyxy = det_cpu[:, :4]
     confs = det_cpu[:, 4]
     cids = det_cpu[:, 5].astype(int)
+
+    del tensor, pred, det
+
+    global _yolov9_frame_counter
+    _yolov9_frame_counter += 1
+    if _yolov9_frame_counter % 90 == 0:
+        import gc
+        gc.collect()
+        if _device != "cpu":
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
 
     return xyxy, confs, cids, elapsed_ms
 

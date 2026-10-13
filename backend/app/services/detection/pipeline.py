@@ -208,6 +208,19 @@ class DetectionPipeline:
             except Exception as e:
                 logger.error(f"Error evaluating rules for camera {self.camera_id}: {e}", exc_info=True)
 
+        # 9. Periodic dictionary memory pruning (prevent infinite memory accumulation over time)
+        if len(self._track_confirmations) > 100:
+            active_ids = {t.track_id for t in tracked_objects}
+            stale_keys = [k for k in self._track_confirmations if k not in active_ids]
+            for k in stale_keys[:50]:
+                self._track_confirmations.pop(k, None)
+
+        if len(self._event_cooldowns) > 200:
+            cutoff = now - (self.cooldown_seconds * 3)
+            stale_cd = [k for k, v in self._event_cooldowns.items() if v < cutoff]
+            for k in stale_cd:
+                self._event_cooldowns.pop(k, None)
+
         return confirmed_events
 
     async def _run_groq_enrichment(self, snapshot_path: str, label: str, confidence: float):

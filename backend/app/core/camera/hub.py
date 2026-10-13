@@ -59,7 +59,8 @@ class ConsumerQueue:
             if self.strategy == ConsumerStrategy.LATEST:
                 # Drop oldest frame
                 try:
-                    self._queue.get_nowait()
+                    dropped_item = self._queue.get_nowait()
+                    del dropped_item
                     with self._lock:
                         self._dropped_frames += 1
                 except queue.Empty:

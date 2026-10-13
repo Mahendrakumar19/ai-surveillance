@@ -320,17 +320,32 @@ class YoloESessionTracker:
         return tracked_results, new_confirmed
 
 
-# Session registry: session_id -> YoloESessionTracker
-_session_trackers: Dict[str, YoloESessionTracker] = {}
+# Session registry: session_id -> (tracker, last_active_timestamp)
+_session_trackers: Dict[str, Tuple[YoloESessionTracker, float]] = {}
 _session_lock = threading.Lock()
+_yoloe_frame_counter = 0
 
 
 def get_session_tracker(session_id: str) -> YoloESessionTracker:
-    """Get or create a ByteTrack YoloESessionTracker for a given session."""
+    """Get or create a ByteTrack YoloESessionTracker, pruning expired sessions."""
+    now = time.time()
     with _session_lock:
+        # Periodic TTL cleanup of stale sessions older than 60s to prevent session leakage
+        if len(_session_trackers) > 5:
+            stale = [sid for sid, (_, last_seen) in _session_trackers.items() if (now - last_seen) > 60.0]
+            for sid in stale:
+                _session_trackers.pop(sid, None)
+
         if session_id not in _session_trackers:
-            _session_trackers[session_id] = YoloESessionTracker(session_id)
-        return _session_trackers[session_id]
+            # Bound maximum simultaneous session trackers
+            if len(_session_trackers) >= 20:
+                oldest_sid = min(_session_trackers.keys(), key=lambda k: _session_trackers[k][1])
+                _session_trackers.pop(oldest_sid, None)
+            _session_trackers[session_id] = (YoloESessionTracker(session_id), now)
+        else:
+            tracker, _ = _session_trackers[session_id]
+            _session_trackers[session_id] = (tracker, now)
+        return _session_trackers[session_id][0]
 
 
 def remove_session_tracker(session_id: str) -> None:
@@ -423,6 +438,21 @@ def track_frame(
                 xyxy_list.append([x1, y1, x2, y2])
                 conf_list.append(conf)
                 cid_list.append(cls_id)
+
+    # Free Ultralytics results and tensor memory immediately
+    del results
+
+    global _yoloe_frame_counter
+    _yoloe_frame_counter += 1
+    if _yoloe_frame_counter % 90 == 0:
+        import gc
+        gc.collect()
+        if _device != "cpu":
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
 
     xyxy_arr = np.array(xyxy_list, dtype=np.float32) if xyxy_list else np.empty((0, 4), dtype=np.float32)
     conf_arr = np.array(conf_list, dtype=np.float32) if conf_list else np.empty((0,), dtype=np.float32)

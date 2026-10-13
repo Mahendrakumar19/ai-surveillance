@@ -24,6 +24,7 @@ _model_lock = threading.Lock()
 _model = None
 _model_names: Dict[int, str] = {}
 _device: str = "cpu"
+_frame_counter: int = 0
 
 
 def _resolve_model_path() -> str:
@@ -205,6 +206,21 @@ def detect_frame(
             })
 
             counts[cls_name] = counts.get(cls_name, 0) + 1
+
+    # Explicitly deallocate Ultralytics results to free internal frame tensors
+    del results
+
+    global _frame_counter
+    _frame_counter += 1
+    if _frame_counter % 90 == 0:
+        import gc
+        gc.collect()
+        if _device != "cpu":
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
 
     return {
         "detections": detections,

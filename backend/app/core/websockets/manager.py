@@ -162,10 +162,22 @@ class WebSocketManager:
             
             connections = list(self.active_connections.get(tenant_id, []))
 
-        # Send to all matching
+        # Send to all matching and prune dead/broken connections
+        dead_conns = []
         for conn in connections:
             if self._should_send(conn, message):
-                await self._send_json(conn.ws, message)
+                success = await self._send_json(conn.ws, message)
+                if not success:
+                    dead_conns.append(conn)
+
+        if dead_conns:
+            async with self.lock:
+                for dc in dead_conns:
+                    if dc.tenant_id in self.active_connections:
+                        if dc in self.active_connections[dc.tenant_id]:
+                            self.active_connections[dc.tenant_id].remove(dc)
+                        if not self.active_connections[dc.tenant_id]:
+                            del self.active_connections[dc.tenant_id]
 
     async def broadcast_event(self, tenant_id: uuid.UUID, event_data: dict, action: str = "event.created"):
         """Utility wrapper for broadcasting events."""
